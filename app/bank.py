@@ -1,6 +1,6 @@
 # bank.py
 
-from account import Account
+from models.account import Account
 
 class Bank:
     def __init__(self, name, country, established_year):
@@ -49,5 +49,6 @@ if __name__ == "__main__":
     print("Balance after withdrawing 30:", acc.balance)
     print(acc.get_transactions())
     bank.delete_account("1234")
+    print("Account deleted.")
     print("Account Info: ",bank.get_account("1234"))
     

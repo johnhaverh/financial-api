@@ -1,4 +1,4 @@
-from transaction import Transaction
+from .transaction import Transaction
 class Account:
     def __init__(self, account_id, balance=0.0):
         self.account_id = account_id
