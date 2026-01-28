@@ -1,54 +1,42 @@
 # bank.py
 
+from dataclasses import dataclass, field
+from typing import Dict
 from models.account import Account
 
+@dataclass
 class Bank:
-    def __init__(self, name, country, established_year):
-        self.name = name
-        self.country = country
-        self.established_year = established_year
-        self.accounts = {}
+    name: str
+    country: str
+    established_year: int
 
-    def get_bank_info(self):
-        return {
-            "name": self.name,
-            "country": self.country,
-            "established_year": self.established_year
-        }
-    
-    def create_account(self, account_id, initial_balance=0):
+    accounts: Dict[str, Account] = field(default_factory=dict)
+
+    def create_account(self, account_id: str, initial_balance: float = 0) -> Account:
         if account_id in self.accounts:
             raise ValueError("Account already exists")
-        self.accounts[account_id] = Account(account_id, initial_balance)
-        return self.accounts[account_id]
+        account = Account(account_id, initial_balance)
+        self.accounts[account_id] = account
+        return account
 
-    def get_account(self, account_id):
+    def get_account(self, account_id: str) -> Account:
         return self.accounts.get(account_id)
 
-    def delete_account(self, account_id):
+    def delete_account(self, account_id: str) -> bool:
         if account_id in self.accounts:
             del self.accounts[account_id]
             return True
         return False
     
     def __repr__(self):
-        return f"Name: {self.name} Country: {self.country} Established Year: {self.established_year}"
+        return f"\n Name: {self.name} \n Country: {self.country} \n Established Year: {self.established_year} \n "
 
-# Example usage
+# Ejemplo de uso
 if __name__ == "__main__":
-    bank =Bank("Global Bank", "USA", 1990)
-    #print("Bank info:", bank.get_bank_info())
+    bank = Bank("Global Bank", "USA", 1990)
     print("Bank info:", bank)
-
-    acc = bank.create_account("1234", 100)
-    print("Account Info: ",bank.get_account("1234"))
-    print("Initial Balance:", acc.balance)
-    acc.deposit(50)
-    print("Balance after depositing 50:", acc.balance)
-    acc.withdraw(30)
-    print("Balance after withdrawing 30:", acc.balance)
-    print(acc.get_transactions())
-    bank.delete_account("1234")
-    print("Account deleted.")
-    print("Account Info: ",bank.get_account("1234"))
+    acc1 = bank.create_account("1234", 100)
+    acc1.deposit(50)
+    acc1.withdraw(30)
+    print(acc1.get_transactions())
     
