@@ -5,7 +5,7 @@ def test_bank_info(self):
         self.assertEqual(info["country"], "Test Country")
         self.assertEqual(info["established_year"], 2000)
 
-from financial_api.bank import Bank
+from bank import Bank
 
 import unittest 
 class TestBank(unittest.TestCase):
@@ -25,4 +25,3 @@ class TestBank(unittest.TestCase):
         self.assertEqual(bank.name, "Test Bank")
         self.assertEqual(bank.country, "Test Country")
         self.assertEqual(bank.established_year, 2000)
-        

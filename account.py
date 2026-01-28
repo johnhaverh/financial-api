@@ -1,12 +1,15 @@
+from transaction import Transaction
 class Account:
     def __init__(self, account_id, balance=0.0):
         self.account_id = account_id
         self.balance = balance
+        self.transactions = []
 
     def deposit(self, amount):
         if amount <= 0:
             raise ValueError("Deposit amount must be positive.")
         self.balance += amount
+        self.transactions.append(Transaction("DEPOSIT", 1, amount, "USD", "Deposit"))
         return self.balance
 
     def withdraw(self, amount):
@@ -15,6 +18,7 @@ class Account:
         if amount > self.balance:
             raise ValueError("Insufficient funds.")
         self.balance -= amount
+        self.transactions.append(Transaction("WITHDRAW", 1, amount, "USD", "Withdrawal"))
         return self.balance
 
     def get_balance(self):
@@ -25,6 +29,12 @@ class Account:
             "account_id": self.account_id,
             "balance": self.balance
         }
+    
+    def get_transactions(self):
+        return self.transactions
+    
+    def __repr__(self):
+        return f"Id: {self.account_id} Balance: {self.balance}"
     
 class SavingsAccount(Account):
     def __init__(self, account_id, balance=0.0, interest_rate=0.01):
@@ -56,12 +66,3 @@ class CheckingAccount(Account):
         info = super().get_account_info()
         info["overdraft_limit"] = self.overdraft_limit
         return info
-
-# Ejemplo de uso
-if __name__ == "__main__":
-    acc = Account("1234", 100)
-    print("Balance inicial:", acc.balance)
-    acc.deposit(50)
-    print("Balance después de depositar 50:", acc.balance)
-    acc.withdraw(30)
-    print("Balance después de retirar 30:", acc.balance)
