@@ -14,7 +14,7 @@ class Bank:
 
     def create_account(self, account_id: str, initial_balance: float = 0) -> Account:
         if account_id in self.accounts:
-            raise ValueError("Account already exists")
+            raise ValueError("Account number already exists")
         account = Account(account_id, initial_balance)
         self.accounts[account_id] = account
         return account
