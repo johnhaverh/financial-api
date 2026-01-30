@@ -38,6 +38,9 @@ class Account:
         self.transactions.append(Transaction("WITHDRAW", 2, amount, "USD", "Withdrawal"))
         return self._balance
     
+    def get_balance_summary(self) -> float:
+        return self._balance
+
     def get_transactions(self) -> List[Transaction]:
         return self.transactions
     

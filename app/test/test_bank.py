@@ -51,5 +51,10 @@ class TestBank(unittest.TestCase):
         with self.assertRaises(Exception):
             tx.amount = 200
             
+    def test_balance_summary(self):
+        self.acc.deposit(200)
+        self.acc.withdraw(50)
+        self.assertEqual(self.acc.get_balance_summary(), 250)
+
 if __name__ == "__main__":
     unittest.main()
