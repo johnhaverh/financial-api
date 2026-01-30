@@ -40,5 +40,16 @@ class TestBank(unittest.TestCase):
         with self.assertRaises(AttributeError):
             self.acc.balance = 1000
 
+    def test_invalid_transaction_type(self):
+        from models.transaction import Transaction
+        with self.assertRaises(ValueError):
+            Transaction("TRANSFER", 1, 100, "USD", "Transfer")
+
+    def test_transaction_is_immutable(self):
+        from models.transaction import Transaction
+        tx = Transaction("DEPOSIT", 1, 100, "USD", "Deposit")
+        with self.assertRaises(Exception):
+            tx.amount = 200
+            
 if __name__ == "__main__":
     unittest.main()

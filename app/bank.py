@@ -34,9 +34,9 @@ class Bank:
 # Ejemplo de uso
 if __name__ == "__main__":
     bank = Bank("Global Bank", "USA", 1990)
-    print("Bank info:", bank)
     acc1 = bank.create_account("1234", 100)
     acc1.deposit(50)
     acc1.withdraw(30)
     print(acc1.get_transactions())
+    print("Bank info:", bank)
     

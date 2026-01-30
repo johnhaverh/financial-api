@@ -8,6 +8,12 @@ class Account:
     _balance: float = 0
     transactions: List[Transaction] = field(default_factory=list)
 
+    def __post_init__(self):
+        if not self.account_id:
+            raise ValueError("Account ID is required")
+        if self._balance < 0:
+            raise ValueError("Initial balance cannot be negative")
+
     @property
     def balance(self):
         return self._balance
@@ -29,7 +35,7 @@ class Account:
         if amount > self._balance:
             raise ValueError("Insufficient funds.")
         self._balance -= amount
-        self.transactions.append(Transaction("WITHDRAW", 1, amount, "USD", "Withdrawal"))
+        self.transactions.append(Transaction("WITHDRAW", 2, amount, "USD", "Withdrawal"))
         return self._balance
     
     def get_transactions(self) -> List[Transaction]:
