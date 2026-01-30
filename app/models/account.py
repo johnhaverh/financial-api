@@ -20,7 +20,7 @@ class Account:
 
     def deposit(self, amount: float):
         if not isinstance(amount, (int, float)):
-            raise TypeError("Amount must be numeric")
+            raise TypeError("Amount number must be numeric")
         if amount <= 0:
             raise ValueError("Deposit amount must be positive.")
         self._balance += amount
