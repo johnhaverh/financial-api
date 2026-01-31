@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass, field
 from typing import Dict
-from models.account import Account
+from app.models.account import Account
 
 @dataclass
 class Bank:

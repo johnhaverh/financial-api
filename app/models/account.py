@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 from typing import List
-from .transaction import Transaction
+from app.models.transaction import Transaction
 
 @dataclass
 class Account:
@@ -40,7 +40,7 @@ class Account:
     
     def get_balance_summary(self) -> float:
         return self._balance
-
+    
     def get_transactions(self) -> List[Transaction]:
         return self.transactions
     
