@@ -12,6 +12,9 @@ class Bank:
 
     accounts: Dict[str, Account] = field(default_factory=dict)
 
+    def reset(self):
+        self.accounts.clear()
+
     def create_account(self, account_id: str, initial_balance: float = 0) -> Account:
         if account_id in self.accounts:
             raise ValueError("Account number already exists")
@@ -19,7 +22,7 @@ class Bank:
         self.accounts[account_id] = account
         return account
 
-    def get_account(self, account_id: str) -> Account:
+    def get_account(self, account_id: str) -> Account | None:
         return self.accounts.get(account_id)
 
     def delete_account(self, account_id: str) -> bool:

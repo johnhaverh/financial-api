@@ -1,11 +1,16 @@
 from fastapi import FastAPI, HTTPException
 from app.bank import Bank
 from app.schemas.account import AccountCreate
-from app.schemas.transaction import TransactionRequest
-
-app = FastAPI(title="Financial API")
+from app.schemas.transaction import TransactionRequest, TransactionResponse
 
 bank = Bank("Global Bank", "USA", 1990)
+
+app = FastAPI(
+    title="Banking API",
+    description=f"{bank.name} - {bank.country}",
+    version="1.0.0"
+)
+
 
 @app.post("/accounts")
 def create_account(data: AccountCreate):
@@ -21,8 +26,10 @@ def deposit(account_id: str, tx: TransactionRequest):
     if not acc:
         raise HTTPException(status_code=404, detail="Account not found")
     try:
-        acc.deposit(tx.amount)
-        return {"balance": acc.balance}
+        acc.deposit(tx.amount, tx.currency, tx.description)
+        return {"balance": acc.balance,
+                "transactions": len(acc.transactions)
+            }
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -32,8 +39,10 @@ def withdraw(account_id: str, tx: TransactionRequest):
     if not acc:
         raise HTTPException(status_code=404, detail="Account not found")
     try:
-        acc.withdraw(tx.amount)
-        return {"balance": acc.balance}
+        acc.withdraw(tx.amount, tx.currency, tx.description)
+        return {"balance": acc.balance,
+                "transactions": len(acc.transactions)
+            }
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
     
@@ -42,4 +51,14 @@ def get_balance(account_id: str):
     acc = bank.get_account(account_id)
     if not acc:
         raise HTTPException(status_code=404, detail="Account not found")
-    return {"balance": acc.get_balance_summary()}
+    # return {"balance": acc.get_balance_summary()}
+    return {"balance": acc.balance}
+
+
+@app.get("/accounts/{account_id}/transactions")
+def get_transactions(account_id: str):
+    acc = bank.get_account(account_id)
+    if not acc:
+        raise HTTPException(status_code=404, detail="Account not found")
+
+    return [TransactionResponse(**tx.__dict__) for tx in acc.transactions]
