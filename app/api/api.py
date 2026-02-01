@@ -1,64 +1,128 @@
-from fastapi import FastAPI, HTTPException
-from app.bank import Bank
+from fastapi import FastAPI, Depends, HTTPException
+from sqlalchemy.orm import Session
+
+from app.db.dependencies import get_db
+from app.db.models import AccountDB, TransactionDB
 from app.schemas.account import AccountCreate
 from app.schemas.transaction import TransactionRequest, TransactionResponse
 
-bank = Bank("Global Bank", "USA", 1990)
-
-app = FastAPI(
-    title="Banking API",
-    description=f"{bank.name} - {bank.country}",
-    version="1.0.0"
-)
-
+app = FastAPI()
 
 @app.post("/accounts")
-def create_account(data: AccountCreate):
+def create_account(
+    request: AccountCreate,
+    db: Session = Depends(get_db)
+):
+    if db.query(AccountDB).filter_by(account_id=request.account_id).first():
+        raise HTTPException(status_code=400, detail="Account already exists")
+
+    account = AccountDB(
+        account_id=request.account_id,
+        balance=request.initial_balance
+    )
+
+    db.add(account)
+    db.commit()
+    db.refresh(account)
+    return {"account_id": account.account_id, "balance": account.balance}
+
+
+@app.post("/accounts/{account_id}/deposit")
+def deposit(
+    account_id: str,
+    tx: TransactionRequest,
+    db: Session = Depends(get_db)
+):
+    account = db.query(AccountDB).filter_by(account_id=account_id).first()
+    if not account:
+        raise HTTPException(status_code=404, detail="Account not found")
+    
     try:
-        acc = bank.create_account(data.account_id, data.initial_balance)
-        return {"account_id": acc.account_id, "balance": acc.balance}
+        if tx.amount <= 0:
+            raise ValueError("Deposit amount must be positive")
+        
+        account.balance += tx.amount
+        
+        transaction = TransactionDB(
+            type="DEPOSIT",
+            amount=tx.amount,
+            currency=tx.currency,
+            description=tx.description,
+            account_id=account_id
+        )
+        
+        db.add(transaction)
+        db.commit()
+        db.refresh(account)
+        
+        return {"balance": account.balance, "transactions": len(account.transactions)}
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-@app.post("/accounts/{account_id}/deposit")
-def deposit(account_id: str, tx: TransactionRequest):
-    acc = bank.get_account(account_id)
-    if not acc:
-        raise HTTPException(status_code=404, detail="Account not found")
-    try:
-        acc.deposit(tx.amount, tx.currency, tx.description)
-        return {"balance": acc.balance,
-                "transactions": len(acc.transactions)
-            }
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
 
 @app.post("/accounts/{account_id}/withdraw")
-def withdraw(account_id: str, tx: TransactionRequest):
-    acc = bank.get_account(account_id)
-    if not acc:
+def withdraw(
+    account_id: str,
+    tx: TransactionRequest,
+    db: Session = Depends(get_db)
+):
+    account = db.query(AccountDB).filter_by(account_id=account_id).first()
+    if not account:
         raise HTTPException(status_code=404, detail="Account not found")
-    try:
-        acc.withdraw(tx.amount, tx.currency, tx.description)
-        return {"balance": acc.balance,
-                "transactions": len(acc.transactions)
-            }
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
     
+    try:
+        if tx.amount <= 0:
+            raise ValueError("Withdrawal amount must be positive")
+        if tx.amount > account.balance:
+            raise ValueError("Insufficient funds")
+        
+        account.balance -= tx.amount
+        
+        transaction = TransactionDB(
+            type="WITHDRAW",
+            amount=tx.amount,
+            currency=tx.currency,
+            description=tx.description,
+            account_id=account_id
+        )
+        
+        db.add(transaction)
+        db.commit()
+        db.refresh(account)
+        
+        return {"balance": account.balance, "transactions": len(account.transactions)}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
 @app.get("/accounts/{account_id}/balance")
-def get_balance(account_id: str):
-    acc = bank.get_account(account_id)
-    if not acc:
+def get_balance(
+    account_id: str,
+    db: Session = Depends(get_db)
+):
+    account = db.query(AccountDB).filter_by(account_id=account_id).first()
+    if not account:
         raise HTTPException(status_code=404, detail="Account not found")
-    # return {"balance": acc.get_balance_summary()}
-    return {"balance": acc.balance}
+    return {"account_id": account.account_id, "balance": account.balance}
 
 
 @app.get("/accounts/{account_id}/transactions")
-def get_transactions(account_id: str):
-    acc = bank.get_account(account_id)
-    if not acc:
+def get_transactions(
+    account_id: str,
+    db: Session = Depends(get_db)
+):
+    account = db.query(AccountDB).filter_by(account_id=account_id).first()
+    if not account:
         raise HTTPException(status_code=404, detail="Account not found")
-
-    return [TransactionResponse(**tx.__dict__) for tx in acc.transactions]
+    
+    transactions = db.query(TransactionDB).filter_by(account_id=account_id).all()
+    return [
+        {
+            "type": t.type,
+            "amount": t.amount,
+            "currency": t.currency,
+            "description": t.description,
+            "timestamp": t.timestamp
+        }
+        for t in transactions
+    ]
