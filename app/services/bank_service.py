@@ -1,73 +1,56 @@
 from fastapi import HTTPException
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.models import AccountDB, TransactionDB
 from app.repositories.account_repository import AccountRepository
+from app.core.logger import logger
+from typing import List, Optional
+from datetime import datetime
 
 class BankService:
-
     def __init__(self):
         self.repo = AccountRepository()
 
-    def create_account(self, db: Session, account_id: str, initial_balance: float):
-        existing = self.repo.get(db, account_id)
-        if existing:
+    async def create_account(self, db: AsyncSession, account_id: str, initial_balance: float):
+        logger.info(f"Creating account {account_id} with balance {initial_balance}")
+        account = await self.repo.get(db, account_id)
+        if account:
             raise HTTPException(status_code=400, detail="Account already exists")
+        return await self.repo.create(db, account_id, initial_balance)
 
-        new_acc = AccountDB(
-            account_id=account_id,
-            balance=initial_balance
-        )
-        return self.repo.create(db, new_acc)
-
-    def deposit(self, db: Session, account_id: str, amount: float, currency: str, description: str):
-        account = self.repo.get(db, account_id)
+    async def deposit(self, db: AsyncSession, account_id: str, amount: float, currency: str, description: str):
+        logger.info(f"Depositing {amount} {currency} to {account_id}")
+        account = await self.repo.get(db, account_id)
         if not account:
             raise HTTPException(status_code=404, detail="Account not found")
+        return await self.repo.deposit(db, account, amount, currency, description)
 
-        if amount <= 0:
-            raise HTTPException(status_code=400, detail="Deposit amount must be positive")
-
-        # Ajustar balance
-        account.balance += amount
-
-        tx = TransactionDB(
-            type="DEPOSIT",
-            amount=amount,
-            currency=currency,
-            description=description,
-            account_id=account_id
-        )
-
-        self.repo.save(db, tx)
-
-        # Persistimos cambio en account también
-        self.repo.save(db, account)
-        return account
-
-    def withdraw(self, db: Session, account_id: str, amount: float, currency: str, description: str):
-        account = self.repo.get(db, account_id)
+    async def withdraw(self, db: AsyncSession, account_id: str, amount: float, currency: str, description: str):
+        logger.info(f"Withdrawing {amount} {currency} from {account_id}")
+        account = await self.repo.get(db, account_id)
         if not account:
             raise HTTPException(status_code=404, detail="Account not found")
-
-        if amount <= 0:
-            raise HTTPException(status_code=400, detail="Withdraw amount must be positive")
-        if amount > account.balance:
+        if account.balance < amount:
             raise HTTPException(status_code=400, detail="Insufficient funds")
+        return await self.repo.withdraw(db, account, amount, currency, description)
 
-        account.balance -= amount
-
-        tx = TransactionDB(
-            type="WITHDRAW",
-            amount=amount,
-            currency=currency,
-            description=description,
-            account_id=account_id
-        )
-
-        self.repo.save(db, tx)
-        self.repo.save(db, account)
-
-        return account
-
-    def get_transactions(self, db: Session, account_id: str):
-        return self.repo.list_transactions(db, account_id)
+    async def get_transactions(
+        self, db: AsyncSession, account_id: str, 
+        type_: Optional[str] = None, 
+        start: Optional[datetime] = None, 
+        end: Optional[datetime] = None
+    ) -> List[TransactionDB]:
+        account = await self.repo.get(db, account_id)
+        if not account:
+            raise HTTPException(status_code=404, detail="Account not found")
+        
+        transactions = await self.repo.list_transactions(db, account_id)
+        
+        # Filtrar por tipo
+        if type_:
+            transactions = [t for t in transactions if t.type_ == type_]
+        # Filtrar por rango de fechas
+        if start:
+            transactions = [t for t in transactions if t.timestamp >= start]
+        if end:
+            transactions = [t for t in transactions if t.timestamp <= end]
+        return transactions

@@ -1,1 +1,7 @@
 pytest
+sqlalchemy
+fastapi
+uvicorn
+httpx
+pydantic
+aiosqlite

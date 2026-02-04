@@ -1,18 +1,9 @@
+from pydantic import BaseModel, Field
 from datetime import datetime
-from pydantic import BaseModel
 
 class TransactionRequest(BaseModel):
-    # type_: str
-    # transaction_id: int
-    amount: float
-    currency: str = "USD"
-    description: str = "Transaction"
-    # timestamp: datetime = None
-
-class TransactionResponse(BaseModel):
-    type_: str
-    transaction_id: int
-    amount: float
-    currency: str
-    description: str
-    timestamp: datetime
+    type_: str = Field(..., pattern="^(deposit|withdraw)$")
+    amount: float = Field(..., gt=0)
+    currency: str = Field(..., min_length=3, max_length=3)
+    description: str = Field(..., min_length=1, max_length=255)
+    timestamp: datetime = Field(default_factory=datetime.now)

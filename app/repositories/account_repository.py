@@ -1,37 +1,59 @@
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 from app.db.models import AccountDB, TransactionDB
+from datetime import datetime
 
 class AccountRepository:
 
-    def get(self, db: Session, account_id: str) -> AccountDB | None:
-        return db.query(AccountDB).filter(AccountDB.account_id == account_id).first()
+    async def get(self, db: AsyncSession, account_id: str):
+        result = await db.execute(
+            select(AccountDB).where(AccountDB.account_id == account_id)
+        )
+        return result.scalar_one_or_none()
 
-    def create(self, db: Session, account: AccountDB) -> AccountDB:
+    async def create(self, db: AsyncSession, account_id: str, initial_balance: float):
+        account = AccountDB(account_id=account_id, balance=initial_balance)
         db.add(account)
-        db.commit()
-        db.refresh(account)
+        await db.commit()
+        await db.refresh(account)
         return account
 
-    def save(self, db: Session, entity):
+    async def save(self, db: AsyncSession, entity):
         db.add(entity)
-        db.commit()
-        db.refresh(entity)
+        await db.commit()
+        await db.refresh(entity)
         return entity
 
-    def list_transactions(self, db: Session, account_id: str):
-        return db.query(TransactionDB).filter(TransactionDB.account_id == account_id).all()
-    
-    def add_transaction(self, db: Session, transaction: TransactionDB) -> TransactionDB:
+    async def deposit(self, db: AsyncSession, account: AccountDB, amount: float, currency: str, description: str):
+        account.balance += amount
+        transaction = TransactionDB(
+            account_id=account.account_id,
+            type="deposit",
+            amount=amount,
+            currency=currency,
+            description=description,
+            timestamp=datetime.now()
+        )
         db.add(transaction)
-        db.commit()
-        db.refresh(transaction)
-        return transaction
-    
-    def get_by_id(self, db: Session, account_id: str) -> AccountDB | None:
-        return db.query(AccountDB).filter_by(account_id=account_id).first()
-    
-    def update_balance(self, db: Session, account: AccountDB, new_balance: float) -> AccountDB:
-        account.balance = new_balance
-        db.commit()
-        db.refresh(account)
+        await self.save(db, account)
         return account
+
+    async def withdraw(self, db: AsyncSession, account: AccountDB, amount: float, currency: str, description: str):
+        account.balance -= amount
+        transaction = TransactionDB(
+            account_id=account.account_id,
+            type="withdraw",
+            amount=amount,
+            currency=currency,
+            description=description,
+            timestamp=datetime.now()
+        )
+        db.add(transaction)
+        await self.save(db, account)
+        return account
+
+    async def list_transactions(self, db: AsyncSession, account_id: str):
+        result = await db.execute(
+            select(TransactionDB).where(TransactionDB.account_id == account_id)
+        )
+        return result.scalars().all()
