@@ -28,7 +28,7 @@ class AccountRepository:
         account.balance += amount
         transaction = TransactionDB(
             account_id=account.account_id,
-            type="deposit",
+            type_="deposit",
             amount=amount,
             currency=currency,
             description=description,
@@ -42,7 +42,7 @@ class AccountRepository:
         account.balance -= amount
         transaction = TransactionDB(
             account_id=account.account_id,
-            type="withdraw",
+            type_="withdraw",
             amount=amount,
             currency=currency,
             description=description,
@@ -57,3 +57,25 @@ class AccountRepository:
             select(TransactionDB).where(TransactionDB.account_id == account_id)
         )
         return result.scalars().all()
+
+    async def get_summary(self, db: AsyncSession, account_id: str) -> dict:
+        account = await self.get(db, account_id)
+        if not account:
+            return None
+        
+        transactions = await self.list_transactions(db, account_id)
+        
+        deposits = sum(
+            t.amount for t in transactions if t.type_ == "deposit"
+        )
+        withdrawals = sum(
+            t.amount for t in transactions if t.type_ == "withdraw"
+        )
+        
+        return {
+            "account_id": account.account_id,
+            "balance": account.balance,
+            "total_deposits": deposits,
+            "total_withdrawals": withdrawals,
+            "transaction_count": len(transactions)
+        }

@@ -54,3 +54,40 @@ class BankService:
         if end:
             transactions = [t for t in transactions if t.timestamp <= end]
         return transactions
+    
+    # async def get_account_summary(self, db: AsyncSession, account_id: str) -> dict:
+    #     account = await self.repo.get(db, account_id)
+    #     if not account:
+    #         raise HTTPException(status_code=404, detail="Account not found")
+        
+    #     # transactions = await self.repo.list_transactions(db, account_id)
+
+    #     deposits = sum(
+    #         t.amount for t in account.transactions if t.type_ == "deposit"
+    #     )
+    #     withdrawals = sum(
+    #         t.amount for t in account.transactions if t.type_ == "withdrawal"
+    #     )
+
+    #     return {
+    #         "account_id": account.account_id,
+    #         "balance": account.balance,
+    #         "total_deposits": deposits,
+    #         "total_withdrawals": withdrawals,
+    #         "transaction_count": len(account.transactions)
+    #     }
+    
+    async def get_account_summary(self, db: AsyncSession, account_id: str) -> dict:
+        account = await self.repo.get(db, account_id)
+        if not account:
+            raise HTTPException(status_code=404, detail="Account not found")
+        
+        summary = await self.repo.get_summary(db, account_id)
+
+        return {
+            "account_id": account.account_id,
+            "balance": summary["balance"],
+            "total_deposits": summary["total_deposits"],
+            "total_withdrawals": summary["total_withdrawals"],
+            "transaction_count": summary["transaction_count"]
+        }

@@ -50,3 +50,7 @@ async def get_transactions(
     db: AsyncSession = Depends(get_db)
 ):
     return await bank_service.get_transactions(db, account_id, type_, start, end)
+
+@app.get("/accounts/{account_id}/summary")
+async def account_summary(account_id: str, db: AsyncSession = Depends(get_db)):
+    return await bank_service.get_account_summary(db, account_id)

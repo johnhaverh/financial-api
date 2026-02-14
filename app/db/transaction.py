@@ -8,7 +8,7 @@ class TransactionDB(Base):
     __tablename__ = "transactions"
 
     id = Column(Integer, primary_key=True, index=True)
-    type = Column(String)
+    type_ = Column(String)
     amount = Column(Float)
     currency = Column(String)
     description = Column(String)

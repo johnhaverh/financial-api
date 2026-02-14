@@ -103,3 +103,29 @@ def test_transaction_validation():
         "description": "Test negative amount"
     })
     assert response.status_code == 422
+
+def test_account_summary():
+    client.post("/accounts", json={"account_id": "acc10", "initial_balance": 0})
+    
+    client.post("/accounts/acc10/deposit", json={
+        "type_": "deposit",
+        "amount": 100,
+        "currency": "USD",
+        "description": "salary"
+    })
+
+    client.post("/accounts/acc10/withdraw", json={
+        "type_": "withdraw",
+        "amount": 40,
+        "currency": "USD",
+        "description": "groceries"
+    })
+
+    response = client.get("/accounts/acc10/summary")
+    data = response.json()
+
+    assert response.status_code == 200
+    assert data["balance"] == 60
+    assert data["total_deposits"] == 100
+    assert data["total_withdrawals"] == 40
+    assert data["transaction_count"] == 2
